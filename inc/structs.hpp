@@ -14,6 +14,10 @@ namespace vector2 {
 		GLint attribIDPosition;
 		GLint attribIDColor;
 	};
+	struct sounds {
+		std::map<std::string, Mix_Music*> mus;
+		std::map<std::string, Mix_Chunk*> eff;
+	};
 }
 
 #endif /* INC_STRUCTS_HPP_ */

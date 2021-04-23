@@ -455,6 +455,8 @@ GLuint CreateShaderProgram( std::vector<GLuint> shaders )
 
 int main( int argc, char* argv[] )
 {
+	// audioTest(); return 0;
+
 	g_PreviousTicks = std::clock();
 	g_A = g_W = g_S = g_D = g_Q = g_E = 0;
 

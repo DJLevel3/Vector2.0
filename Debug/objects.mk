@@ -2,7 +2,7 @@
 # Automatically-generated file. Do not edit!
 ################################################################################
 
-USER_OBJS := /usr/bin/irrKlang/libIrrKlang.so
+USER_OBJS :=
 
-LIBS := -lGL -lglut -lGLEW
+LIBS := -lGL -lSDL2_mixer -lSDL2 -lGLEW -lglut
 
