@@ -30,9 +30,11 @@ namespace vector2 {
 
 		void setPosition(glm::vec3 position);
 		void setRotation(glm::quat rotation);
+		void setScale(glm::vec3 scale);
 
 		void move(glm::vec3 position);
 		void rotate(glm::quat rotation);
+		void scale(glm::vec3 scale);
 
 		void genVAO( shader s );
 		void genMatrix();

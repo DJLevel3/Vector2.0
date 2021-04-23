@@ -26,7 +26,7 @@ void Object::genVAO(shader s)
 	glVertexAttribPointer( s.attribIDPosition, 3, GL_FLOAT, false, sizeof(vertex), MEMBER_OFFSET(vertex,pos) );
 	glEnableVertexAttribArray( s.attribIDPosition );
 
-	glVertexAttribPointer( s.attribIDColor, 3, GL_FLOAT, false, sizeof(vertex), MEMBER_OFFSET(vertex, color) );
+	glVertexAttribPointer( s.attribIDColor, 3, GL_FLOAT, false, sizeof(vertex), MEMBER_OFFSET(vertex,color) );
 	glEnableVertexAttribArray( s.attribIDColor );
 
 	glBindVertexArray( 0 );
@@ -94,6 +94,7 @@ void Object::setVertices(std::vector<vertex> v)
 void Object::setIndices(std::vector<GLuint> i)
 {
 	indices = i;
+	size = i.size()/3;
 }
 
 void Object::setPosition(glm::vec3 position)
@@ -106,6 +107,11 @@ void Object::setRotation(glm::quat rotation)
 	rot = rotation;
 }
 
+void Object::setScale(glm::vec3 scale)
+{
+	scl = scale;
+}
+
 void Object::move(glm::vec3 position)
 {
 	pos += position;
@@ -114,6 +120,11 @@ void Object::move(glm::vec3 position)
 void Object::rotate(glm::quat rotation)
 {
 	rot *= rotation;
+}
+
+void Object::scale(glm::vec3 scale)
+{
+	scl *= scale;
 }
 
 std::vector<vertex> Object::getVertices() {return vertices;}

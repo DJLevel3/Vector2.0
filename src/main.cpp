@@ -27,8 +27,6 @@ namespace vector2 {
 glm::vec3 g_InitialCameraPosition = glm::vec3( 0, 0, 40 );;
 glm::quat g_InitialCameraRotation = glm::quat(1,0,0,0);
 
-GLuint shipvao =  0;
-
 shader vecShader;
 
 /* Axes
@@ -69,7 +67,7 @@ std::vector<GLuint> shipIndices = {
 		3,     5,    7,  // 6
 		3,     6,    8,  // 7
 };
-Object ship(shipVertices, shipIndices);
+Object ship;
 
 /* Cube
 vertex vertices[8] = {
@@ -492,6 +490,7 @@ int main( int argc, char* argv[] )
 	vecShader.attribIDColor = glGetAttribLocation( vecShader.program, "inColor" );
 	vecShader.mvp = glGetUniformLocation( vecShader.program, "mvp" );
 
+	ship = Object(shipVertices, shipIndices, (glm::vec3){0,0,0}, (glm::quat){1,0,0,0}, (glm::vec3){1,1,1});
 	ship.genVAO(vecShader);
 	ship.genMatrix();
 
