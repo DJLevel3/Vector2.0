@@ -7,18 +7,21 @@ CPP_SRCS += \
 ../src/audio.cpp \
 ../src/camera.cpp \
 ../src/main.cpp \
+../src/object.cpp \
 ../src/render.cpp 
 
 OBJS += \
 ./src/audio.o \
 ./src/camera.o \
 ./src/main.o \
+./src/object.o \
 ./src/render.o 
 
 CPP_DEPS += \
 ./src/audio.d \
 ./src/camera.d \
 ./src/main.d \
+./src/object.d \
 ./src/render.d 
 
 

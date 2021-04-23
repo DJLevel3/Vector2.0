@@ -10,7 +10,7 @@ int g_iWindowWidth = 1024;
 int g_iWindowHeight = 576;
 int g_iWindowHandle = 0;
 
-int g_W, g_A, g_S, g_D, g_Q, g_E;
+int g_W, g_A, g_S, g_D, g_Q, g_E, g_left, g_right, g_up, g_down;
 bool g_bShift = false;
 
 glm::ivec2 g_MousePos;
@@ -27,11 +27,9 @@ namespace vector2 {
 glm::vec3 g_InitialCameraPosition = glm::vec3( 0, 0, 40 );;
 glm::quat g_InitialCameraRotation = glm::quat(1,0,0,0);
 
-GLint uniformMVP = -1;
-GLuint shipvao       =  0;
+GLuint shipvao =  0;
 
-GLuint vectorShader =  0;
-GLuint flatShader =  0;
+shader vecShader;
 
 /* Axes
 vertex vertices[4] = {
@@ -49,19 +47,19 @@ GLuint indices[3 * 3] = {
 */
 
 // Ship 1
-vertex vertices[9] = {
-		{glm::vec3( 0.00,  2.00, -1.00), glm::vec3(0,1,0)},  // 0
-		{glm::vec3( 0.00,  0.00,  4.00), glm::vec3(0,0,1)},  // 1
-		{glm::vec3( 3.00,  0.00, -5.00), glm::vec3(1,0,0)},  // 2
-		{glm::vec3( 0.00, -1.50, -2.00), glm::vec3(1,1,1)},  // 3
-		{glm::vec3(-3.00,  0.00, -5.00), glm::vec3(1,1,1)},  // 4
-		{glm::vec3( 0.65, -1.50, -5.00), glm::vec3(1,1,1)},  // 5
-		{glm::vec3(-0.65, -1.50, -5.00), glm::vec3(1,1,1)},  // 6
-		{glm::vec3( 0.65,  0.00, -5.00), glm::vec3(1,1,1)},  // 7
-		{glm::vec3(-0.65,  0.00, -5.00), glm::vec3(1,1,1)}   // 8
+std::vector<vertex> shipVertices = {
+		{glm::vec3( 0.00,  2.00, -1.00), glm::vec3(0,1,0.2)},  // 0
+		{glm::vec3( 0.00,  0.00,  4.00), glm::vec3(0,1,0.2)},  // 1
+		{glm::vec3( 3.00,  0.00, -5.00), glm::vec3(0,1,0.2)},  // 2
+		{glm::vec3( 0.00, -1.50, -2.00), glm::vec3(0,1,0.2)},  // 3
+		{glm::vec3(-3.00,  0.00, -5.00), glm::vec3(0,1,0.2)},  // 4
+		{glm::vec3( 0.65, -1.50, -5.00), glm::vec3(0,1,0.2)},  // 5
+		{glm::vec3(-0.65, -1.50, -5.00), glm::vec3(0,1,0.2)},  // 6
+		{glm::vec3( 0.65,  0.00, -5.00), glm::vec3(0,1,0.2)},  // 7
+		{glm::vec3(-0.65,  0.00, -5.00), glm::vec3(0,1,0.2)}   // 8
 };
-int size = 8 * 3;
-GLuint indices[8 * 3] = {
+int shipSize = 8 * 3;
+std::vector<GLuint> shipIndices = {
 		0,     1,    2,  // 0
 		0,     1,    4,  // 1
 		3,     1,    2,  // 2
@@ -71,7 +69,7 @@ GLuint indices[8 * 3] = {
 		3,     5,    7,  // 6
 		3,     6,    8,  // 7
 };
-//
+Object ship(shipVertices, shipIndices);
 
 /* Cube
 vertex vertices[8] = {
@@ -103,6 +101,8 @@ void IdleGL()
 
     float fDeltaTime = deltaTicks / (float)CLOCKS_PER_SEC;
 
+    float cRotSpeed = 50.0f;
+
     float cameraSpeed = 10.0f;
     if ( g_bShift )
     {
@@ -110,6 +110,8 @@ void IdleGL()
     }
 
     g_Camera.Translate( glm::vec3( g_D - g_A, g_Q - g_E, g_S - g_W ) * cameraSpeed * fDeltaTime );
+    g_Camera.Rotate(glm::angleAxis<float>( glm::radians(0.1) * 0.5f, glm::vec3(g_up - g_down, 0, 0) ));
+	g_Camera.Rotate(glm::angleAxis<float>( glm::radians(fDeltaTime * cRotSpeed) * 0.5f, glm::vec3(0, g_left - g_right, 0) ));
 
     glutPostRedisplay();
 }
@@ -118,7 +120,7 @@ void DisplayGL()
 {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-    drawModel(size, shipvao, vectorShader, uniformMVP, g_Rotation);
+    drawModel(ship, vecShader);
 
     glutSwapBuffers();
 }
@@ -207,7 +209,27 @@ void SpecialGL( int key, int x, int y )
             g_bShift = true;
         }
         break;
-    }
+    case GLUT_KEY_LEFT:
+		{
+			g_left = true;
+		}
+		break;
+	case GLUT_KEY_RIGHT:
+		{
+			g_right = true;
+		}
+		break;
+	case GLUT_KEY_UP:
+		{
+			g_up = true;
+		}
+		break;
+	case GLUT_KEY_DOWN:
+		{
+			g_down = true;
+		}
+		break;
+	}
 }
 
 void SpecialUpGL( int key, int x, int y )
@@ -220,7 +242,27 @@ void SpecialUpGL( int key, int x, int y )
             g_bShift = false;
         }
         break;
-    }
+    case GLUT_KEY_LEFT:
+		{
+			g_left = false;
+		}
+		break;
+	case GLUT_KEY_RIGHT:
+		{
+			g_right = false;
+		}
+		break;
+	case GLUT_KEY_UP:
+		{
+			g_up = false;
+		}
+		break;
+	case GLUT_KEY_DOWN:
+		{
+			g_down = false;
+		}
+		break;
+	}
 }
 
 void MouseGL( int button, int state, int x, int y )
@@ -441,37 +483,15 @@ int main( int argc, char* argv[] )
 	//shadersV.push_back(fragmentShaderV);
 
 	// Create the shader program.
-	vectorShader = CreateShaderProgram( shadersV );
-	assert( vectorShader != 0 );
+	vecShader.program = CreateShaderProgram( shadersV );
+	assert( vecShader.program != 0 );
 
-	GLint positionAtribID = glGetAttribLocation( vectorShader, "inPosition" );
-	GLint colorAtribID = glGetAttribLocation( vectorShader, "inColor" );
-	uniformMVP = glGetUniformLocation( vectorShader, "MVP" );
+	vecShader.attribIDPosition = glGetAttribLocation( vecShader.program, "inPosition" );
+	vecShader.attribIDColor = glGetAttribLocation( vecShader.program, "inColor" );
+	vecShader.mvp = glGetUniformLocation( vecShader.program, "mvp" );
 
-	glGenVertexArrays( 1, &shipvao );
-	glBindVertexArray( shipvao );
-
-	GLuint vertexBuffer, indexBuffer;
-	glGenBuffers( 1, &vertexBuffer );
-	glGenBuffers( 1, &indexBuffer );
-
-	glBindBuffer( GL_ARRAY_BUFFER, vertexBuffer );
-	glBufferData( GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW );
-
-	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexBuffer );
-	glBufferData( GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW );
-
-	glVertexAttribPointer( positionAtribID, 3, GL_FLOAT, false, sizeof(vertex), MEMBER_OFFSET(vertex,pos) );
-	glEnableVertexAttribArray( positionAtribID );
-
-	glVertexAttribPointer( colorAtribID, 3, GL_FLOAT, false, sizeof(vertex), MEMBER_OFFSET(vertex, color) );
-	glEnableVertexAttribArray( colorAtribID );
-
-	glBindVertexArray( 0 );
-	glBindBuffer( GL_ARRAY_BUFFER, 0 );
-	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
-	glDisableVertexAttribArray( positionAtribID );
-	glDisableVertexAttribArray( colorAtribID );
+	ship.genVAO(vecShader);
+	ship.genMatrix();
 
 	glutMainLoop();
 }

@@ -2,6 +2,7 @@
 
 using namespace vector2;
 
+/*
 vertex * vector2::devectorize(std::vector<vertex> v)
 {
 	vertex out[v.size()];
@@ -14,16 +15,17 @@ GLuint * vector2::devectorize(std::vector<GLuint> v, bool null)
 	std::copy(v.begin(), v.end(), out);
 	return out;
 }
+*/
 
-void vector2::drawModel(int size, GLuint vao, GLuint shader, GLuint uniformMVP, glm::quat rotation)
+void vector2::drawModel(Object o, shader s)
 {
-	glBindVertexArray( vao );
-	glUseProgram( shader );
+	glBindVertexArray( o.getVAO() );
+	glUseProgram( s.program );
 
-	glm::mat4 mvp = g_Camera.GetProjectionMatrix() * g_Camera.GetViewMatrix() * glm::toMat4(rotation);
-	glUniformMatrix4fv( uniformMVP, 1, GL_FALSE, glm::value_ptr(mvp) );
+	glm::mat4 mvp = g_Camera.GetProjectionMatrix() * g_Camera.GetViewMatrix() * o.getMatrix();
+	glUniformMatrix4fv( s.mvp, 1, GL_FALSE, glm::value_ptr(mvp) );
 
-	glDrawElements( GL_TRIANGLES, size, GL_UNSIGNED_INT, BUFFER_OFFSET(0) );
+	glDrawElements( GL_TRIANGLES, o.getSize(), GL_UNSIGNED_INT, BUFFER_OFFSET(0) );
 
 	glUseProgram(0);
 	glBindVertexArray(0);

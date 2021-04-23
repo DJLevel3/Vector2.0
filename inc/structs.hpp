@@ -8,6 +8,12 @@ namespace vector2 {
 		glm::vec3 pos;
 		glm::vec3 color;
 	};
+	struct shader {
+		GLuint program;
+		GLuint mvp;
+		GLint attribIDPosition;
+		GLint attribIDColor;
+	};
 }
 
 #endif /* INC_STRUCTS_HPP_ */

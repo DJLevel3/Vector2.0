@@ -5,10 +5,10 @@ layout(location=1) in vec3 inColor;
 
 out vec4 gsin;
 
-uniform mat4 MVP;
+uniform mat4 mvp;
 
 void main()
 {
-    gl_Position = MVP * vec4(inPosition, 1);
+    gl_Position = mvp * vec4(inPosition, 1);
     gsin = vec4(inColor, 1);
 }
