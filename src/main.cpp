@@ -1,4 +1,5 @@
 #include "main.hpp"
+#include "PerlinNoise.h"
 #include "structs.hpp"
 #include "camera.hpp"
 #include "render.hpp"
@@ -24,8 +25,13 @@ namespace vector2 {
 	Camera g_Camera;
 }
 
-glm::vec3 g_InitialCameraPosition = glm::vec3( 0, 0, 40 );;
-glm::quat g_InitialCameraRotation = glm::quat(1,0,0,0);
+glm::vec3 g_InitialCameraPosition = glm::vec3( 0, 5, -10 );;
+glm::quat g_InitialCameraRotation = glm::quat(0,0,1,0) * glm::quat(0.991, -0.131, 0, 0);
+
+glm::vec3 camDeviation = glm::vec3(0,0,0);
+double shakeAngle;
+double progTime = 0;
+PerlinNoise p;
 
 shader vecShader;
 
@@ -46,7 +52,7 @@ GLuint indices[3 * 3] = {
 
 // Ship 1
 std::vector<vertex> shipVertices = {
-		{glm::vec3( 0.00,  2.00, -1.00), glm::vec3(0,1,0.2)},  // 0
+		{glm::vec3( 0.00,  1.70, -3.00), glm::vec3(0,1,0.2)},  // 0
 		{glm::vec3( 0.00,  0.00,  4.00), glm::vec3(0,1,0.2)},  // 1
 		{glm::vec3( 3.00,  0.00, -5.00), glm::vec3(0,1,0.2)},  // 2
 		{glm::vec3( 0.00, -1.50, -2.00), glm::vec3(0,1,0.2)},  // 3
@@ -56,7 +62,6 @@ std::vector<vertex> shipVertices = {
 		{glm::vec3( 0.65,  0.00, -5.00), glm::vec3(0,1,0.2)},  // 7
 		{glm::vec3(-0.65,  0.00, -5.00), glm::vec3(0,1,0.2)}   // 8
 };
-int shipSize = 8 * 3;
 std::vector<GLuint> shipIndices = {
 		0,     1,    2,  // 0
 		0,     1,    4,  // 1
@@ -68,6 +73,23 @@ std::vector<GLuint> shipIndices = {
 		3,     6,    8,  // 7
 };
 Object ship;
+
+// Floor
+std::vector<vertex> floorVertices = {
+		{glm::vec3(-1.00,  0.00,  0.00), glm::vec3(1,0,0)},  // 0
+		{glm::vec3( 1.00,  0.00,  0.00), glm::vec3(1,0,0)},  // 1
+		{glm::vec3( 0.00,  0.00,  1.00), glm::vec3(1,0,0)},  // 2
+		{glm::vec3( 0.00,  0.00, -1.00), glm::vec3(1,0,0)},  // 3
+		{glm::vec3(-1.00,  0.00,  2.00), glm::vec3(1,0,0)},  // 4
+		{glm::vec3( 1.00,  0.00,  2.00), glm::vec3(1,0,0)},  // 5
+};
+std::vector<GLuint> floorIndices = {
+		0,     1,    2,  // 0
+		0,     1,    3,  // 1
+		0,     4,    2,  // 2
+		1,     5,    2   // 3
+};
+Object objfloor;
 
 /* Cube
 vertex vertices[8] = {
@@ -91,6 +113,19 @@ GLuint indices[36] = {
 };
 */
 
+double moveAround(double angle, double maxDeviation, double gravity, glm::vec2 position, glm::vec2 center)
+{
+	double pi = glm::pi<double>();
+	double radFromCenter;
+	if (position != center) radFromCenter = glm::mod(-angle + glm::atan(center.y - position.y, center.x - position.x) + pi, (2 * pi)) - pi;
+	else radFromCenter = 0;
+	double distFromCenter = glm::distance(center, position);
+	double pull = gravity * distFromCenter * radFromCenter;
+	double r = p.noise(progTime/100, 0, 0);
+	double deviation = 2 * maxDeviation * r - maxDeviation;
+	return glm::mod((angle + deviation + pi) + pull, (2 * pi)) - pi;
+}
+
 void IdleGL()
 {
     g_CurrentTicks = std::clock();
@@ -98,18 +133,24 @@ void IdleGL()
     g_PreviousTicks = g_CurrentTicks;
 
     float fDeltaTime = deltaTicks / (float)CLOCKS_PER_SEC;
+    progTime += fDeltaTime;
 
-    float cRotSpeed = 50.0f;
+    glm::vec3 shakeSpeed = {1.8,1,1};
+    //shakeAngle = moveAround(shakeAngle, 1, 0.1, camDeviation, (glm::vec2){0.0001,0});
+    //double deltaX = glm::cos(shakeAngle) * fDeltaTime * shakeSpeed;
+    //double deltaY = glm::sin(shakeAngle) * fDeltaTime * shakeSpeed;
+    float t = progTime * 100;
+    glm::vec3 newDeviation = (glm::vec3){(p.noise(t, 0, 0) - 0.5) * shakeSpeed.x, (p.noise(0, t, 0) - 0.5) * shakeSpeed.y, (p.noise(0, 0, t) - 0.5) * shakeSpeed.z};
+    double deltaX = newDeviation.x - camDeviation.x;
+    double deltaY = newDeviation.y - camDeviation.y;
+    double deltaZ = newDeviation.z - camDeviation.z;
+    camDeviation = newDeviation;
+    g_Camera.Translate(glm::vec3(deltaX, deltaY, deltaZ));
 
-    float cameraSpeed = 10.0f;
-    if ( g_bShift )
-    {
-        cameraSpeed = 50.0f;
-    }
+    //g_Camera.Translate( glm::vec3( g_D - g_A, g_Q - g_E, g_S - g_W ) * cameraSpeed * fDeltaTime );
+    //g_Camera.Rotate(glm::angleAxis<float>( glm::radians(0.1) * 0.5f, glm::vec3(g_up - g_down, 0, 0) ));
+	//g_Camera.Rotate(glm::angleAxis<float>( glm::radians(fDeltaTime * cRotSpeed) * 0.5f, glm::vec3(0, g_left - g_right, 0) ));
 
-    g_Camera.Translate( glm::vec3( g_D - g_A, g_Q - g_E, g_S - g_W ) * cameraSpeed * fDeltaTime );
-    g_Camera.Rotate(glm::angleAxis<float>( glm::radians(0.1) * 0.5f, glm::vec3(g_up - g_down, 0, 0) ));
-	g_Camera.Rotate(glm::angleAxis<float>( glm::radians(fDeltaTime * cRotSpeed) * 0.5f, glm::vec3(0, g_left - g_right, 0) ));
 
     glutPostRedisplay();
 }
@@ -118,7 +159,8 @@ void DisplayGL()
 {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-    drawModel(ship, vecShader);
+    drawModel(objfloor, vecShader, g_Camera);
+    drawModel(ship, vecShader, g_Camera);
 
     glutSwapBuffers();
 }
@@ -276,11 +318,11 @@ void MotionGL( int x, int y )
 
     std::cout << "dX: " << delta.x << " dy: " << delta.y << std::endl;
 
-    glm::quat rotX = glm::angleAxis<float>( glm::radians(delta.y) * 0.5f, glm::vec3(1, 0, 0) );
-    glm::quat rotY = glm::angleAxis<float>( glm::radians(delta.x) * 0.5f, glm::vec3(0, 1, 0) );
+    //glm::quat rotX = glm::angleAxis<float>( glm::radians(delta.y) * 0.5f, glm::vec3(1, 0, 0) );
+    //glm::quat rotY = glm::angleAxis<float>( glm::radians(delta.x) * 0.5f, glm::vec3(0, 1, 0) );
 
     //g_Camera.Rotate( rotX * rotY );
-    g_Rotation = ( rotX * rotY ) * g_Rotation;
+    //g_Rotation = ( rotX * rotY ) * g_Rotation;
 }
 
 void ReshapeGL( int w, int h )
@@ -294,7 +336,7 @@ void ReshapeGL( int w, int h )
     g_iWindowHeight = h;
 
     g_Camera.SetViewport( 0, 0, w, h );
-    g_Camera.SetProjectionRH( 60.0f, w/(float)h, 0.1f, 100.0f );
+    g_Camera.SetProjectionRH( 80.0f, w/(float)h, 1.0f, 1000.0f );
 
     glutPostRedisplay();
 }
@@ -333,11 +375,9 @@ void InitGL( int argc, char* argv[] )
     glutMotionFunc(MotionGL);
     glutReshapeFunc(ReshapeGL);
 
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f );
-    glClearDepth(1.0f);
+    glClearColor(0.0, 0.0, 0.1, 1.0 );
+    glClearDepth(1.0);
     glEnable(GL_DEPTH_TEST);
-
-    glLineWidth(3);
 
     std::cout << "Initialize OpenGL Success!" << std::endl;
 }
@@ -414,7 +454,7 @@ GLuint LoadShader( GLenum shaderType, const std::string& shaderFile )
 	return shader;
 }
 
-GLuint CreateShaderProgram( std::vector<GLuint> shaders )
+GLuint CreateShaderProgram( std::vector<GLuint> &shaders )
 {
     // Create a shader program.
     GLuint program = glCreateProgram();
@@ -453,6 +493,7 @@ GLuint CreateShaderProgram( std::vector<GLuint> shaders )
 
 int main( int argc, char* argv[] )
 {
+	p = PerlinNoise(static_cast <unsigned int> (time(0)));
 	// audioTest(); return 0;
 
 	g_PreviousTicks = std::clock();
@@ -490,9 +531,25 @@ int main( int argc, char* argv[] )
 	vecShader.attribIDColor = glGetAttribLocation( vecShader.program, "inColor" );
 	vecShader.mvp = glGetUniformLocation( vecShader.program, "mvp" );
 
-	ship = Object(shipVertices, shipIndices, (glm::vec3){0,0,0}, (glm::quat){1,0,0,0}, (glm::vec3){1,1,1});
-	ship.genVAO(vecShader);
-	ship.genMatrix();
+	ship = Object(vecShader);
+	ship.setVertices(shipVertices);
+	ship.setIndices(shipIndices);
+	ship.setPosition((glm::vec3){0,0,0});
+	ship.setRotation((glm::quat){1,0,0,0});
+	ship.setScale((glm::vec3){1,1,1});
+	ship.genVAO();
+	ship.getMatrix();
+
+	objfloor = Object(vecShader);
+	objfloor.setVertices(floorVertices);
+	objfloor.setIndices(floorIndices);
+	objfloor.setPosition((glm::vec3){0,-3.5,0});
+	objfloor.setRotation((glm::quat){1,0,0,0});
+	objfloor.setScale((glm::vec3){1,1,1});
+	objfloor.genVAO();
+	objfloor.getMatrix();
+
+	glLineWidth(8);
 
 	glutMainLoop();
 }

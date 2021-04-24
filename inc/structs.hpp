@@ -10,7 +10,7 @@ namespace vector2 {
 	};
 	struct shader {
 		GLuint program;
-		GLuint mvp;
+		GLuint mvp = -1;
 		GLint attribIDPosition;
 		GLint attribIDColor;
 	};

@@ -17,25 +17,17 @@ GLuint * vector2::devectorize(std::vector<GLuint> v, bool null)
 }
 */
 
-void vector2::drawModel(Object o, shader s)
+void vector2::drawModel(Object &o, shader &s, Camera &c)
 {
 	glBindVertexArray( o.getVAO() );
 	glUseProgram( s.program );
 
-	glm::mat4 mvp = g_Camera.GetProjectionMatrix() * g_Camera.GetViewMatrix() * o.getMatrix();
-	glUniformMatrix4fv( s.mvp, 1, GL_FALSE, glm::value_ptr(mvp) );
+	glm::mat4 t = o.getMatrix();
+	glm::mat4 MVP = c.GetProjectionMatrix() * c.GetViewMatrix() * t; // glm::toMat4(glm::quat(1,0,0,0)); //
+	glUniformMatrix4fv( s.mvp, 1, GL_FALSE, glm::value_ptr(MVP) );
 
 	glDrawElements( GL_TRIANGLES, o.getSize(), GL_UNSIGNED_INT, BUFFER_OFFSET(0) );
 
 	glUseProgram(0);
 	glBindVertexArray(0);
-}
-
-void test()
-{
-	float vertices[] = {
-	    -0.5f, -0.5f, 0.0f,
-	     0.5f, -0.5f, 0.0f,
-	     0.0f,  0.5f, 0.0f
-	};
 }

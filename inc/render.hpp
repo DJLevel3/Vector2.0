@@ -9,8 +9,7 @@
 namespace vector2 {
 	extern Camera g_Camera;
 
-	void drawModel(Object o, shader s);
-	//void drawModel(Object o, shader s);
+	void drawModel(Object &o, shader &s, Camera &c);
 }
 
 
