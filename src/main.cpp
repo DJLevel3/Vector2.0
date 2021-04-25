@@ -4,6 +4,7 @@
 #include "camera.hpp"
 #include "render.hpp"
 #include "audio.hpp"
+#include "UI.hpp"
 
 using namespace vector2;
 
@@ -34,6 +35,20 @@ double progTime = 0;
 PerlinNoise p;
 
 shader vecShader;
+shader vecShaderTile;
+shader coverShader;
+shader coverShaderTile;
+
+float fMScale = 2;
+int   fMSizeX = 6;
+int   fMSizeZ = 10;
+
+int   wMSizeZ = 5;
+
+int   fWidth = 6;
+int   fLength = 200;
+
+double playfield = (fWidth/2) * fMSizeX;
 
 /* Axes
 vertex vertices[4] = {
@@ -50,6 +65,52 @@ GLuint indices[3 * 3] = {
 };
 */
 
+Empty scene = Empty({0, 0, 0,}, {1, 0, 0, 0}, {1, 1, 1});
+
+std::vector<vertex> defaultVertices = {
+		{glm::vec3( 0.00,  1.00,  0.00), glm::vec3(1, 1, 1)},
+		{glm::vec3( 0.00,  1.00,  0.00), glm::vec3(1, 1, 1)},
+		{glm::vec3( 0.00,  1.00,  0.00), glm::vec3(1, 1, 1)},
+		{glm::vec3( 0.00,  1.00,  0.00), glm::vec3(1, 1, 1)},
+		{glm::vec3( 0.00,  1.00,  0.00), glm::vec3(1, 1, 1)},
+		{glm::vec3( 0.00,  1.00,  0.00), glm::vec3(1, 1, 1)},
+		{glm::vec3( 0.00,  1.00,  0.00), glm::vec3(1, 1, 1)},
+		{glm::vec3( 0.00,  1.00,  0.00), glm::vec3(1, 1, 1)},
+		{glm::vec3( 0.00,  1.00,  0.00), glm::vec3(1, 1, 1)},
+		{glm::vec3( 0.00,  1.00,  0.00), glm::vec3(1, 1, 1)},
+		{glm::vec3( 0.00,  1.00,  0.00), glm::vec3(1, 1, 1)},
+		{glm::vec3( 0.00,  1.00,  0.00), glm::vec3(1, 1, 1)},
+};
+
+std::vector<GLuint> defaultIndices = {
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+};
+
+letter nul = {defaultVertices, defaultIndices};
+
 // Ship 1
 std::vector<vertex> shipVertices = {
 		{glm::vec3( 0.00,  1.70, -3.00), glm::vec3(0,1,0.2)},  // 0
@@ -63,33 +124,60 @@ std::vector<vertex> shipVertices = {
 		{glm::vec3(-0.65,  0.00, -5.00), glm::vec3(0,1,0.2)}   // 8
 };
 std::vector<GLuint> shipIndices = {
-		0,     1,    2,  // 0
-		0,     1,    4,  // 1
-		3,     1,    2,  // 2
-		3,     1,    4,  // 3
-		2,     1,    4,  // 4
-		3,     5,    6,  // 5
-		3,     5,    7,  // 6
-		3,     6,    8,  // 7
+		0, 0,    1,    2,  // 0
+		0, 0,    1,    4,  // 1
+		3, 3,    1,    2,  // 2
+		3, 3,    1,    4,  // 3
+		2, 2,    1,    4,  // 4
+		3, 3,    5,    6,  // 5
+		3, 3,    5,    7,  // 6
+		3, 3,    6,    8   // 7
 };
 Object ship;
 
 // Floor
 std::vector<vertex> floorVertices = {
-		{glm::vec3(-1.00,  0.00,  0.00), glm::vec3(1,0,0)},  // 0
-		{glm::vec3( 1.00,  0.00,  0.00), glm::vec3(1,0,0)},  // 1
-		{glm::vec3( 0.00,  0.00,  1.00), glm::vec3(1,0,0)},  // 2
-		{glm::vec3( 0.00,  0.00, -1.00), glm::vec3(1,0,0)},  // 3
-		{glm::vec3(-1.00,  0.00,  2.00), glm::vec3(1,0,0)},  // 4
-		{glm::vec3( 1.00,  0.00,  2.00), glm::vec3(1,0,0)},  // 5
+		{glm::vec3(-3.00,  0.00,  0.00), glm::vec3(1,0.3,0)},  // 0
+		{glm::vec3( 3.00,  0.00,  0.00), glm::vec3(1,0.3,0)},  // 1
+		{glm::vec3( 0.00,  0.00,  5.00), glm::vec3(1,0.3,0)},  // 2
+		{glm::vec3( 0.00,  0.00, -5.00), glm::vec3(1,0.3,0)},  // 3
+		{glm::vec3( 6.00,  0.00,  5.00), glm::vec3(1,0.3,0)},  // 4
+		{glm::vec3( 6.00,  0.00, -5.00), glm::vec3(1,0.3,0)},  // 5
+		{glm::vec3( 9.00,  0.00,  0.00), glm::vec3(1,0.3,0)},  // 6
 };
 std::vector<GLuint> floorIndices = {
-		0,     1,    2,  // 0
-		0,     1,    3,  // 1
-		0,     4,    2,  // 2
-		1,     5,    2   // 3
+		0, 0, 1, 2,  // 0
+		0, 0, 1, 3,  // 1
+		1, 1, 2, 4,  // 2
+		1, 1, 3, 5,  // 3
+		1, 1, 5, 6,  // 4
+		1, 1, 4, 6,  // 4
 };
-Object objfloor;
+std::vector<glm::vec3> floorOffsets = {};
+TileObject objfloor;
+
+
+// Wall
+std::vector<vertex> wallVertices = {
+		{glm::vec3( 0.00,  0.00,  0.00), glm::vec3(1,0,0)},  // 0
+		{glm::vec3( 0.00,  0.00,  5.00), glm::vec3(1,0,0)},  // 1
+		{glm::vec3( 0.00,  8.00,  5.00), glm::vec3(1,0,0)},  // 2
+		{glm::vec3( 0.00,  8.00,  0.00), glm::vec3(1,0,0)}   // 3
+};
+std::vector<GLuint> wallIndices = {
+		0,     1,     2,    3   // 0
+};
+std::vector<glm::vec3> wallOffsets = {};
+TileObject objwall;
+
+Object text;
+std::string let = "a";
+
+unsigned currentScene = 2;
+glm::vec3 scenePosition = glm::vec3(0,0,0);
+std::map<std::string, letter> alphabet;
+bool letterKey = true;
+bool lettersChanged = true;
 
 /* Cube
 vertex vertices[8] = {
@@ -126,6 +214,44 @@ double moveAround(double angle, double maxDeviation, double gravity, glm::vec2 p
 	return glm::mod((angle + deviation + pi) + pull, (2 * pi)) - pi;
 }
 
+void gameIdle(float fDeltaTime)
+{
+	glm::vec3 shakeSpeed = {0.5,0.5,0.5};
+	//shakeAngle = moveAround(shakeAngle, 1, 0.1, camDeviation, (glm::vec2){0.0001,0});
+	//double deltaX = glm::cos(shakeAngle) * fDeltaTime * shakeSpeed;
+	//double deltaY = glm::sin(shakeAngle) * fDeltaTime * shakeSpeed;
+	float t = progTime * 100;
+	glm::vec3 newDeviation = (glm::vec3){(p.noise(t, 0, 0) - 0.5) * shakeSpeed.x, (p.noise(0, t, 0) - 0.5) * shakeSpeed.y, (p.noise(0, 0, t) - 0.5) * shakeSpeed.z};
+	double deltaX = newDeviation.x - camDeviation.x;
+	double deltaY = newDeviation.y - camDeviation.y;
+	double deltaZ = newDeviation.z - camDeviation.z;
+	camDeviation = newDeviation;
+	g_Camera.Translate(glm::vec3(deltaX, deltaY, deltaZ));
+
+	glm::vec3 p = scene.getPosition();
+
+	double sDX = (g_D - g_A) * 1500 * fDeltaTime;
+	double sDZ = -1000 * fDeltaTime;
+
+	if (p.x < (0 - (fWidth/2.0)) * fMSizeX) {
+		scene.setPosition(glm::vec3((0 - (fWidth/2.0)) * fMSizeX, p.y, p.z));
+	}
+	else if (p.x > (fWidth/2.0) * fMSizeX) {
+		scene.setPosition(glm::vec3((fWidth/2.0) * fMSizeX, p.y, p.z));
+	}
+	scenePosition += glm::vec3(sDX, 0, sDZ);
+	if (scenePosition.x >= (0 - (fWidth/2.0)) * fMSizeX && scenePosition.x <= (fWidth/2.0) * fMSizeX)
+	{
+		ship.setPosition(glm::vec3(0,0,0));
+		scene.move({sDX, 0, 0});
+	} else {
+		ship.move(glm::vec3(-sDX,0,0));
+	}
+	scene.move({0, 0, sDZ});
+
+	if (ship.getPosition().x > (fWidth/2.0) * fMSizeX || ship.getPosition().x < (0 - (fWidth/2.0)) * fMSizeX) ship.move({0,0,0});
+}
+
 void IdleGL()
 {
     g_CurrentTicks = std::clock();
@@ -135,22 +261,38 @@ void IdleGL()
     float fDeltaTime = deltaTicks / (float)CLOCKS_PER_SEC;
     progTime += fDeltaTime;
 
-    glm::vec3 shakeSpeed = {1.8,1,1};
-    //shakeAngle = moveAround(shakeAngle, 1, 0.1, camDeviation, (glm::vec2){0.0001,0});
-    //double deltaX = glm::cos(shakeAngle) * fDeltaTime * shakeSpeed;
-    //double deltaY = glm::sin(shakeAngle) * fDeltaTime * shakeSpeed;
-    float t = progTime * 100;
-    glm::vec3 newDeviation = (glm::vec3){(p.noise(t, 0, 0) - 0.5) * shakeSpeed.x, (p.noise(0, t, 0) - 0.5) * shakeSpeed.y, (p.noise(0, 0, t) - 0.5) * shakeSpeed.z};
-    double deltaX = newDeviation.x - camDeviation.x;
-    double deltaY = newDeviation.y - camDeviation.y;
-    double deltaZ = newDeviation.z - camDeviation.z;
-    camDeviation = newDeviation;
-    g_Camera.Translate(glm::vec3(deltaX, deltaY, deltaZ));
+    /*
+
+    glm::vec3 shakeSpeed = {0.5,0.5,0.5};
+	//shakeAngle = moveAround(shakeAngle, 1, 0.1, camDeviation, (glm::vec2){0.0001,0});
+	//double deltaX = glm::cos(shakeAngle) * fDeltaTime * shakeSpeed;
+	//double deltaY = glm::sin(shakeAngle) * fDeltaTime * shakeSpeed;
+	float t = progTime * 100;
+	glm::vec3 newDeviation = (glm::vec3){(p.noise(t, 0, 0) - 0.5) * shakeSpeed.x, (p.noise(0, t, 0) - 0.5) * shakeSpeed.y, (p.noise(0, 0, t) - 0.5) * shakeSpeed.z};
+	double deltaX = newDeviation.x - camDeviation.x;
+	double deltaY = newDeviation.y - camDeviation.y;
+	double deltaZ = newDeviation.z - camDeviation.z;
+	camDeviation = newDeviation;
+	g_Camera.Translate(glm::vec3(deltaX, deltaY, deltaZ));
+	*/
+
+    switch (currentScene) {
+    case 0:
+    	break;
+    case 1:
+    	gameIdle(fDeltaTime);
+    	break;
+    case 2:
+    	if (lettersChanged)
+    	{
+    		changeData(text, alphabet[let], nul);
+    	}
+    	break;
+    }
 
     //g_Camera.Translate( glm::vec3( g_D - g_A, g_Q - g_E, g_S - g_W ) * cameraSpeed * fDeltaTime );
     //g_Camera.Rotate(glm::angleAxis<float>( glm::radians(0.1) * 0.5f, glm::vec3(g_up - g_down, 0, 0) ));
 	//g_Camera.Rotate(glm::angleAxis<float>( glm::radians(fDeltaTime * cRotSpeed) * 0.5f, glm::vec3(0, g_left - g_right, 0) ));
-
 
     glutPostRedisplay();
 }
@@ -159,50 +301,70 @@ void DisplayGL()
 {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-    drawModel(objfloor, vecShader, g_Camera);
-    drawModel(ship, vecShader, g_Camera);
+    switch (currentScene) {
+    case 1:
+		drawModel(objfloor, 0, vecShaderTile, g_Camera);
+		drawModel(objwall, 0, coverShaderTile, g_Camera);
+		drawModel(objwall, 1, vecShaderTile, g_Camera);
+		drawModel(ship, 0, vecShader, g_Camera);
+		break;
+    case 2:
+    	drawModel(text, 0, vecShader, g_Camera);
+    	break;
+    }
 
     glutSwapBuffers();
 }
 
 void KeyboardGL( unsigned char c, int x, int y )
 {
-    switch ( c )
-    {
-    case 'w':
-    case 'W':
-        g_W = 1;
-        break;
-    case 'a':
-    case 'A':
-        g_A = 1;
-        break;
-    case 's':
-    case 'S':
-        g_S = 1;
-        break;
-    case 'd':
-    case 'D':
-        g_D = 1;
-        break;
-    case 'q':
-    case 'Q':
-        g_Q = 1;
-        break;
-    case 'e':
-    case 'E':
-        g_E = 1;
-        break;
-    case 'r':
-    case 'R':
-        g_Camera.SetPosition( g_InitialCameraPosition );
-        g_Camera.SetRotation( g_InitialCameraRotation );
-        g_Rotation = glm::quat(1,0,0,0);
-        break;
-    case 27:
-        glutLeaveMainLoop();
-        break;
-    }
+	if (!letterKey)
+	{
+		switch ( c )
+		{
+		case 'g':
+			letterKey = true;
+			break;
+		case 'w':
+		case 'W':
+			g_W = 1;
+			break;
+		case 'a':
+		case 'A':
+			g_A = 1;
+			break;
+		case 's':
+		case 'S':
+			g_S = 1;
+			break;
+		case 'd':
+		case 'D':
+			g_D = 1;
+			break;
+		case 'q':
+		case 'Q':
+			g_Q = 1;
+			break;
+		case 'e':
+		case 'E':
+			g_E = 1;
+			break;
+		case 'r':
+		case 'R':
+			g_Camera.SetPosition( g_InitialCameraPosition );
+			g_Camera.SetRotation( g_InitialCameraRotation );
+			g_Rotation = glm::quat(1,0,0,0);
+			break;
+		case 27:
+			glutLeaveMainLoop();
+			break;
+		}
+	} else {
+		alphabet = loadLetters("../resources/alphabet.ldf", alphabet);
+		let = c;
+		lettersChanged = true;
+		letterKey = false;
+	}
 }
 
 void KeyboardUpGL( unsigned char c, int x, int y )
@@ -375,9 +537,11 @@ void InitGL( int argc, char* argv[] )
     glutMotionFunc(MotionGL);
     glutReshapeFunc(ReshapeGL);
 
-    glClearColor(0.0, 0.0, 0.1, 1.0 );
-    glClearDepth(1.0);
-    glEnable(GL_DEPTH_TEST);
+    glClearColor(0.0, 0.0, 0.0, 1.0 );
+    //glClearDepth(1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glutSwapBuffers();
+    //glEnable(GL_DEPTH_TEST);
 
     std::cout << "Initialize OpenGL Success!" << std::endl;
 }
@@ -505,51 +669,132 @@ int main( int argc, char* argv[] )
 	InitGL(argc, argv);
 	InitGLEW();
 
-	GLuint vertexShaderV,geoShaderV,fragmentShaderV;
+	GLuint vertexShader,geoShader,fragmentShader;
+	std::vector<GLuint> shaders;
 
-	vertexShaderV = LoadShader( GL_VERTEX_SHADER, "../resources/shaders/vecshader/vertex.glsl" );
-	geoShaderV = LoadShader( GL_GEOMETRY_SHADER, "../resources/shaders/vecshader/geometry.glsl" );
-	fragmentShaderV = LoadShader( GL_FRAGMENT_SHADER, "../resources/shaders/vecshader/fragment.glsl" );
+	vertexShader = LoadShader( GL_VERTEX_SHADER, "../resources/shaders/vecshader/vertex.glsl" );
+	geoShader = LoadShader( GL_GEOMETRY_SHADER, "../resources/shaders/vecshader/geometry.glsl" );
+	fragmentShader = LoadShader( GL_FRAGMENT_SHADER, "../resources/shaders/vecshader/fragment.glsl" );
 
-	//vertexShaderV = LoadShader( GL_VERTEX_SHADER, "../resources/shaders/flatshader/vertex.glsl" );
-	//fragmentShaderV = LoadShader( GL_FRAGMENT_SHADER, "../resources/shaders/flatshader/fragment.glsl" );
-
-	std::vector<GLuint> shadersV;
-
-	shadersV.push_back(vertexShaderV);
-	shadersV.push_back(geoShaderV);
-	shadersV.push_back(fragmentShaderV);
-
-	//shadersV.push_back(vertexShaderV);
-	//shadersV.push_back(fragmentShaderV);
+	shaders.push_back(vertexShader);
+	shaders.push_back(geoShader);
+	shaders.push_back(fragmentShader);
 
 	// Create the shader program.
-	vecShader.program = CreateShaderProgram( shadersV );
+	vecShader.program = CreateShaderProgram( shaders );
 	assert( vecShader.program != 0 );
 
 	vecShader.attribIDPosition = glGetAttribLocation( vecShader.program, "inPosition" );
 	vecShader.attribIDColor = glGetAttribLocation( vecShader.program, "inColor" );
 	vecShader.mvp = glGetUniformLocation( vecShader.program, "mvp" );
 
-	ship = Object(vecShader);
+	shaders.clear();
+
+	vertexShader = LoadShader( GL_VERTEX_SHADER, "../resources/shaders/vecshadertile/vertex.glsl" );
+	geoShader = LoadShader( GL_GEOMETRY_SHADER, "../resources/shaders/vecshadertile/geometry.glsl" );
+	fragmentShader = LoadShader( GL_FRAGMENT_SHADER, "../resources/shaders/vecshadertile/fragment.glsl" );
+
+	shaders.push_back(vertexShader);
+	shaders.push_back(geoShader);
+	shaders.push_back(fragmentShader);
+
+	// Create the shader program.
+	vecShaderTile.program = CreateShaderProgram( shaders );
+	assert( vecShaderTile.program != 0 );
+
+	vecShaderTile.attribIDPosition = glGetAttribLocation( vecShaderTile.program, "inPosition" );
+	vecShaderTile.attribIDColor = glGetAttribLocation( vecShaderTile.program, "inColor" );
+	vecShaderTile.attribIDOffset = glGetAttribLocation( vecShaderTile.program, "inOffset" );
+	vecShaderTile.mvp = glGetUniformLocation( vecShaderTile.program, "mvp" );
+
+	shaders.clear();
+
+	vertexShader = LoadShader( GL_VERTEX_SHADER, "../resources/shaders/flatshadertile/vertex.glsl" );
+	geoShader = LoadShader( GL_GEOMETRY_SHADER, "../resources/shaders/flatshadertile/geometry.glsl" );
+	fragmentShader = LoadShader( GL_FRAGMENT_SHADER, "../resources/shaders/flatshadertile/fragment.glsl" );
+
+	shaders.push_back(vertexShader);
+	shaders.push_back(geoShader);
+	shaders.push_back(fragmentShader);
+
+	// Create the shader program.
+	coverShaderTile.program = CreateShaderProgram( shaders );
+	assert( coverShaderTile.program != 0 );
+
+	coverShaderTile.attribIDPosition = glGetAttribLocation( coverShaderTile.program, "inPosition" );
+	coverShaderTile.attribIDColor = glGetAttribLocation( coverShaderTile.program, "inColor" );
+	coverShaderTile.attribIDOffset = glGetAttribLocation( coverShaderTile.program, "inOffset" );
+	coverShaderTile.mvp = glGetUniformLocation( coverShaderTile.program, "mvp" );
+
+	ship = Object(0);
 	ship.setVertices(shipVertices);
 	ship.setIndices(shipIndices);
-	ship.setPosition((glm::vec3){0,0,0});
+	ship.setPosition((glm::vec3){0,2,0});
 	ship.setRotation((glm::quat){1,0,0,0});
 	ship.setScale((glm::vec3){1,1,1});
-	ship.genVAO();
+	ship.genVAO(0, vecShader);
 	ship.getMatrix();
 
-	objfloor = Object(vecShader);
+	fMScale = 2;
+	fMSizeX = 6;
+	fMSizeZ = 10;
+
+	wMSizeZ = 5;
+
+	fWidth = 6;
+	fLength = 200;
+
+	for (double i = (0 - (fWidth/2.0)) * fMSizeX; i < (fWidth/2.0) * fMSizeX; i += fMSizeX)
+	{
+		for (double j = 40; j < fLength * fMSizeZ; j += fMSizeZ)
+		{
+			floorOffsets.push_back((glm::vec3){(int)i, 0, (int)j});
+		}
+	}
+
+	for (double i = (0 - (fWidth/2.0)) * fMSizeX; i <= (fWidth/2.0) * fMSizeX; i += fWidth * fMSizeX)
+	{
+		for (double j = 40; j < fLength * fMSizeZ; j += wMSizeZ)
+		{
+			wallOffsets.push_back((glm::vec3){(int)i, 0, (int)j});
+		}
+	}
+
+	//floorOffsets.push_back((glm::vec3){0,0,0});
+
+	objfloor = TileObject(&scene);
 	objfloor.setVertices(floorVertices);
 	objfloor.setIndices(floorIndices);
+	objfloor.setOffsets(floorOffsets);
 	objfloor.setPosition((glm::vec3){0,-3.5,0});
 	objfloor.setRotation((glm::quat){1,0,0,0});
-	objfloor.setScale((glm::vec3){1,1,1});
-	objfloor.genVAO();
+	objfloor.setScale((glm::vec3){fMScale,fMScale,fMScale});
+	objfloor.genVAO(0, vecShaderTile);
 	objfloor.getMatrix();
 
+	objwall = TileObject(&scene);
+	objwall.setVertices(wallVertices);
+	objwall.setIndices(wallIndices);
+	objwall.setOffsets(wallOffsets);
+	objwall.setPosition((glm::vec3){0,-3.5,0});
+	objwall.setRotation((glm::quat){1,0,0,0});
+	objwall.setScale((glm::vec3){fMScale,fMScale,fMScale});
+	objwall.genVAO(0, coverShaderTile);
+	objwall.genVAO(1, vecShaderTile);
+	objwall.getMatrix();
+
+	text = Object(0);
+	text.setVertices(defaultVertices);
+	text.setIndices(defaultIndices);
+	text.setPosition((glm::vec3){0,0,0});
+	text.setRotation((glm::quat){1,0,0,0});
+	text.setScale((glm::vec3){2,2,2});
+	text.genVAO(0, vecShader);
+	text.getMatrix();
+
 	glLineWidth(8);
+
+	let = "a";
 
 	glutMainLoop();
 }

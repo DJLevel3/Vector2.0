@@ -10,14 +10,14 @@ void main() {
 	fColor = gsin[0];
 	gl_Position = gl_in[0].gl_Position;
 	EmitVertex();
+	fColor = gsin[1];
+	gl_Position = gl_in[1].gl_Position;
+	EmitVertex();
 	fColor = gsin[2];
 	gl_Position = gl_in[2].gl_Position;
 	EmitVertex();
 	fColor = gsin[3];
 	gl_Position = gl_in[3].gl_Position;
-	EmitVertex();
-	fColor = gsin[1];
-	gl_Position = gl_in[1].gl_Position;
 	EmitVertex();
 	fColor = gsin[0];
 	gl_Position = gl_in[0].gl_Position;

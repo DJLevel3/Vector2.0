@@ -5,6 +5,7 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../src/PerlinNoise.cpp \
+../src/UI.cpp \
 ../src/audio.cpp \
 ../src/camera.cpp \
 ../src/main.cpp \
@@ -13,6 +14,7 @@ CPP_SRCS += \
 
 OBJS += \
 ./src/PerlinNoise.o \
+./src/UI.o \
 ./src/audio.o \
 ./src/camera.o \
 ./src/main.o \
@@ -21,6 +23,7 @@ OBJS += \
 
 CPP_DEPS += \
 ./src/PerlinNoise.d \
+./src/UI.d \
 ./src/audio.d \
 ./src/camera.d \
 ./src/main.d \

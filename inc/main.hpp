@@ -9,6 +9,7 @@
 #include <vector>
 #include <map>
 #include <ctime>
+#include <fstream>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
@@ -29,6 +30,7 @@
 
 #ifdef WINDOWS
 #include <direct.h>
+#include <Windows.h>
 #define GetCurrentDir _getcwd
 #else
 #include <unistd.h>

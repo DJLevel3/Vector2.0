@@ -13,10 +13,15 @@ namespace vector2 {
 		GLuint mvp = -1;
 		GLint attribIDPosition;
 		GLint attribIDColor;
+		GLint attribIDOffset;
 	};
 	struct sounds {
 		std::map<std::string, Mix_Music*> mus;
 		std::map<std::string, Mix_Chunk*> eff;
+	};
+	struct letter {
+		std::vector<vertex> points;
+		std::vector<GLuint> lines;
 	};
 }
 
