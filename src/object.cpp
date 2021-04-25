@@ -90,6 +90,8 @@ glm::vec3 Empty::getPosition() {return pos;}
 glm::quat Empty::getRotation() {return rot;}
 glm::vec3 Empty::getScale() {return scl;}
 glm::mat4 Empty::getMatrix() {return getMatrix(true);}
+glm::mat4 Empty::getSelfMatrix() {return glm::scale(glm::translate(glm::mat4(1.0), pos) * glm::toMat4(rot), scl);}
+glm::mat4 Empty::getParentMatrix() {return parent->getMatrix(true);}
 
 
 

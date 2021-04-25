@@ -17,7 +17,6 @@ std::map<std::string, letter> vector2::loadLetters(std::string inFile, std::map<
 	{
 		while (token != "X")
 		{
-			std::cout << "Label: " << token << std::endl;
 			label = token;
 			in >> token;
 		}
@@ -27,11 +26,11 @@ std::map<std::string, letter> vector2::loadLetters(std::string inFile, std::map<
 		in >> token;
 		while (token != "X")
 		{
-			p[0] = std::stod(token);
+			p[0] = std::stod(token) / 3;
 			in >> token;
-			p[1] = std::stod(token);
+			p[1] = std::stod(token) / 3;
 			in >> token;
-			p[2] = std::stod(token);
+			p[2] = std::stod(token) / 3;
 			in >> token;
 
 			if (token == "#") {in >> token; in >> token;}

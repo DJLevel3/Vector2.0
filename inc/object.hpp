@@ -38,6 +38,8 @@ namespace vector2 {
 		glm::vec3 getScale();
 
 		glm::mat4 getMatrix();
+		glm::mat4 getSelfMatrix();
+		glm::mat4 getParentMatrix();
 	};
 
 	class Object : public Empty {

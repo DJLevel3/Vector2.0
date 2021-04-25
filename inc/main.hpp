@@ -26,6 +26,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/string_cast.hpp>
 
 #ifdef WINDOWS
@@ -36,6 +37,11 @@
 #include <unistd.h>
 #define GetCurrentDir getcwd
 #endif
+
+#define SQRT2 1.414
+#define SQRT3 1.732
+#define SQRT5 2.236
+#define SQRT6 2.449
 
 #define BUFFER_OFFSET(offset) ((void*)(offset))
 #define MEMBER_OFFSET(s,m) ((char*)NULL + (offsetof(s,m)))

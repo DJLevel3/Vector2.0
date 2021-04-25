@@ -51,7 +51,7 @@ void Empty2D::setScale(glm::vec2 scale)
 
 void Empty2D::move(glm::vec3 position)
 {
-	pos += position;
+	pos -= position;
 	stale = true;
 }
 
@@ -236,7 +236,7 @@ void TileObject2D::genVAO(unsigned id, shader &shd)
 	GLuint i[indices.size()];
 	std::copy(indices.begin(), indices.end(), i);
 
-	glm::vec3 o[offsets.size()];
+	glm::vec2 o[offsets.size()];
 	std::copy(offsets.begin(), offsets.end(), o);
 
 	glGenVertexArrays( 1, &vao.at(id) );

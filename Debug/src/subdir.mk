@@ -8,8 +8,10 @@ CPP_SRCS += \
 ../src/UI.cpp \
 ../src/audio.cpp \
 ../src/camera.cpp \
+../src/camera2D.cpp \
 ../src/main.cpp \
 ../src/object.cpp \
+../src/object2D.cpp \
 ../src/render.cpp 
 
 OBJS += \
@@ -17,8 +19,10 @@ OBJS += \
 ./src/UI.o \
 ./src/audio.o \
 ./src/camera.o \
+./src/camera2D.o \
 ./src/main.o \
 ./src/object.o \
+./src/object2D.o \
 ./src/render.o 
 
 CPP_DEPS += \
@@ -26,8 +30,10 @@ CPP_DEPS += \
 ./src/UI.d \
 ./src/audio.d \
 ./src/camera.d \
+./src/camera2D.d \
 ./src/main.d \
 ./src/object.d \
+./src/object2D.d \
 ./src/render.d 
 
 

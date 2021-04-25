@@ -2,6 +2,7 @@
 #include "PerlinNoise.h"
 #include "structs.hpp"
 #include "camera.hpp"
+#include "camera2D.hpp"
 #include "render.hpp"
 #include "audio.hpp"
 #include "UI.hpp"
@@ -24,6 +25,7 @@ std::clock_t g_CurrentTicks;
 
 namespace vector2 {
 	Camera g_Camera;
+	Camera2D UI;
 }
 
 glm::vec3 g_InitialCameraPosition = glm::vec3( 0, 5, -10 );;
@@ -78,25 +80,9 @@ std::vector<vertex> defaultVertices = {
 		{glm::vec3( 0.00,  1.00,  0.00), glm::vec3(1, 1, 1)},
 		{glm::vec3( 0.00,  1.00,  0.00), glm::vec3(1, 1, 1)},
 		{glm::vec3( 0.00,  1.00,  0.00), glm::vec3(1, 1, 1)},
-		{glm::vec3( 0.00,  1.00,  0.00), glm::vec3(1, 1, 1)},
-		{glm::vec3( 0.00,  1.00,  0.00), glm::vec3(1, 1, 1)},
 };
 
 std::vector<GLuint> defaultIndices = {
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
 		0, 0, 0, 0,
 		0, 0, 0, 0,
 		0, 0, 0, 0,
@@ -134,6 +120,23 @@ std::vector<GLuint> shipIndices = {
 		3, 3,    6,    8   // 7
 };
 Object ship;
+double shipCurrentZRotation = 0;
+bool shipDead = 0;
+
+
+std::vector<vertex> particleVertices = {
+		{glm::vec3(1, -1/SQRT3, -1/SQRT6),  glm::vec3(0, 1, 0.2)},
+		{glm::vec3(-1, -1/SQRT3, -1/SQRT6), glm::vec3(0, 1, 0.2)},
+		{glm::vec3(0, 2/SQRT3, -1/SQRT6),   glm::vec3(0, 1, 0.2)},
+		{glm::vec3(0, 0, 3/SQRT6),          glm::vec3(0, 1, 0.2)}
+};
+std::vector<GLuint> particleIndices = {
+		0, 0, 1, 2,
+		1, 1, 2, 3,
+		2, 2, 3, 0
+};
+Object explosionParticle = Object(&ship);
+std::vector<glm::quat> ePSplash = {};
 
 // Floor
 std::vector<vertex> floorVertices = {
@@ -170,14 +173,19 @@ std::vector<GLuint> wallIndices = {
 std::vector<glm::vec3> wallOffsets = {};
 TileObject objwall;
 
-Object text;
-std::string let = "a";
+int textSize = 100;
+int textWidth = textSize * 2 / 3;
+int textSpacing = 20;
 
-unsigned currentScene = 2;
+Object text;
+Object2D text2D;
+std::vector<std::string> let = {};
+
+unsigned currentScene = 1;
 glm::vec3 scenePosition = glm::vec3(0,0,0);
 std::map<std::string, letter> alphabet;
-bool letterKey = true;
-bool lettersChanged = true;
+bool letterKey = false;
+bool lettersChanged = false;
 
 /* Cube
 vertex vertices[8] = {
@@ -201,17 +209,18 @@ GLuint indices[36] = {
 };
 */
 
-double moveAround(double angle, double maxDeviation, double gravity, glm::vec2 position, glm::vec2 center)
+float fDeltaTime, splashTime, explosionTime = 0;
+
+void resetGame()
 {
-	double pi = glm::pi<double>();
-	double radFromCenter;
-	if (position != center) radFromCenter = glm::mod(-angle + glm::atan(center.y - position.y, center.x - position.x) + pi, (2 * pi)) - pi;
-	else radFromCenter = 0;
-	double distFromCenter = glm::distance(center, position);
-	double pull = gravity * distFromCenter * radFromCenter;
-	double r = p.noise(progTime/100, 0, 0);
-	double deviation = 2 * maxDeviation * r - maxDeviation;
-	return glm::mod((angle + deviation + pi) + pull, (2 * pi)) - pi;
+	splashTime = explosionTime = 0;
+	shipDead = false;
+	currentScene = 1;
+	scenePosition = glm::vec3(0,0,0);
+	shipCurrentZRotation = 0;
+	ship.setRotation({1,0,0,0});
+	ePSplash = {};
+	scene = Empty({0, 0, 0,}, {1, 0, 0, 0}, {1, 1, 1});
 }
 
 void gameIdle(float fDeltaTime)
@@ -230,26 +239,43 @@ void gameIdle(float fDeltaTime)
 
 	glm::vec3 p = scene.getPosition();
 
-	double sDX = (g_D - g_A) * 1500 * fDeltaTime;
-	double sDZ = -1000 * fDeltaTime;
+	double targetZRotation = (g_D - g_A) * (35/360.0) * 2 * glm::pi<double>();
+	double deltaZR = (targetZRotation - shipCurrentZRotation) * 100 * fDeltaTime * (70/360.0) * 2 * glm::pi<double>();
 
-	if (p.x < (0 - (fWidth/2.0)) * fMSizeX) {
-		scene.setPosition(glm::vec3((0 - (fWidth/2.0)) * fMSizeX, p.y, p.z));
-	}
-	else if (p.x > (fWidth/2.0) * fMSizeX) {
-		scene.setPosition(glm::vec3((fWidth/2.0) * fMSizeX, p.y, p.z));
-	}
-	scenePosition += glm::vec3(sDX, 0, sDZ);
-	if (scenePosition.x >= (0 - (fWidth/2.0)) * fMSizeX && scenePosition.x <= (fWidth/2.0) * fMSizeX)
-	{
-		ship.setPosition(glm::vec3(0,0,0));
-		scene.move({sDX, 0, 0});
+	if (!shipDead) {
+		shipCurrentZRotation += deltaZR;
+		ship.rotate(glm::quat(glm::cos( deltaZR / 2.0 ), 0, 0, glm::sin( deltaZR / 2.0 )));
+
+		double sDX = 3000 * fDeltaTime * shipCurrentZRotation;
+		double sDZ = -2000 * fDeltaTime;
+		if (p.z < -300) {sDZ += fMSizeZ * 2 * wMSizeZ;}
+
+		float sizeDist = 4;
+
+		if (p.x < (0 - (fWidth/2.0)) * (fMSizeX + sizeDist)) {
+			scene.setPosition(glm::vec3((0 - (fWidth/2.0)) * (fMSizeX + sizeDist), p.y, p.z));
+		}
+		else if (p.x > (fWidth/2.0) * (fMSizeX + sizeDist)) {
+			scene.setPosition(glm::vec3((fWidth/2.0) * (fMSizeX + sizeDist), p.y, p.z));
+		}
+		scenePosition += glm::vec3(sDX, 0, sDZ);
+		if (scenePosition.x >= (0 - (fWidth/2.0)) * (fMSizeX + sizeDist) && scenePosition.x <= (fWidth/2.0) * (fMSizeX + sizeDist))
+		{
+			ship.setPosition(glm::vec3(0,0,0));
+			scene.move({sDX, 0, 0});
+		} else {
+			ship.move(glm::vec3(-sDX,0,0));
+			if ((scenePosition.x >= p.x + 10 || scenePosition.x <= p.x - 10))
+			{
+				shipDead = true;
+			}
+		}
+		scene.move({0, 0, sDZ});
 	} else {
-		ship.move(glm::vec3(-sDX,0,0));
+		if (explosionTime >= 110) {
+			currentScene = 4;
+		}
 	}
-	scene.move({0, 0, sDZ});
-
-	if (ship.getPosition().x > (fWidth/2.0) * fMSizeX || ship.getPosition().x < (0 - (fWidth/2.0)) * fMSizeX) ship.move({0,0,0});
 }
 
 void IdleGL()
@@ -258,7 +284,7 @@ void IdleGL()
     float deltaTicks = (float)( g_CurrentTicks - g_PreviousTicks );
     g_PreviousTicks = g_CurrentTicks;
 
-    float fDeltaTime = deltaTicks / (float)CLOCKS_PER_SEC;
+    fDeltaTime = deltaTicks / (float)CLOCKS_PER_SEC;
     progTime += fDeltaTime;
 
     /*
@@ -283,10 +309,6 @@ void IdleGL()
     	gameIdle(fDeltaTime);
     	break;
     case 2:
-    	if (lettersChanged)
-    	{
-    		changeData(text, alphabet[let], nul);
-    	}
     	break;
     }
 
@@ -303,14 +325,44 @@ void DisplayGL()
 
     switch (currentScene) {
     case 1:
-		drawModel(objfloor, 0, vecShaderTile, g_Camera);
+		drawModel(objfloor, 0, coverShaderTile, g_Camera);
+		drawModelOver(objfloor, 1, vecShaderTile, g_Camera);
 		drawModel(objwall, 0, coverShaderTile, g_Camera);
-		drawModel(objwall, 1, vecShaderTile, g_Camera);
-		drawModel(ship, 0, vecShader, g_Camera);
+		drawModelOver(objwall, 1, vecShaderTile, g_Camera);
+		if (shipDead) {
+			if (ePSplash.size() == 0) {
+				explosionTime = 0.0;
+				ePSplash = drawSplash(1000, 0.1, explosionParticle, 0, vecShader, g_Camera);
+			} else {
+				explosionTime += 300 * fDeltaTime;
+				if (explosionTime < 100) {
+					drawSplash(ePSplash, (int)(1000 - 10 * explosionTime), 0.1, explosionTime/10, explosionParticle, 0, vecShader, g_Camera);
+				}
+			}
+		} else {
+			drawModel(ship, 0, vecShader, g_Camera);
+		}
 		break;
     case 2:
-    	drawModel(text, 0, vecShader, g_Camera);
+    	for (int i = 0; i < let.size(); i ++) {
+			changeData(text2D, alphabet[let.at(i)], nul);
+			drawModel(text2D, 0, vecShader, UI);
+			text2D.move({textWidth + textSpacing, 0, 0});
+    	}
+    	text2D.setPosition({0,0,0});
     	break;
+    case 3:
+    	if (ePSplash.size() == 0) {
+    		explosionTime = 0.0;
+    		ePSplash = drawSplash(1000, 0.3, explosionParticle, 0, vecShader, g_Camera);
+    	} else {
+    		explosionTime += 300 * fDeltaTime;
+    		if (explosionTime < 100) {
+    			drawSplash(ePSplash, (int)(1000 - 10 * explosionTime), 0.3, explosionTime/10, explosionParticle, 0, vecShader, g_Camera);
+    		} else {
+    			ePSplash = {};
+    		}
+    	}
     }
 
     glutSwapBuffers();
@@ -318,13 +370,10 @@ void DisplayGL()
 
 void KeyboardGL( unsigned char c, int x, int y )
 {
-	if (!letterKey)
-	{
+	switch ( currentScene ) {
+	case 1:
 		switch ( c )
 		{
-		case 'g':
-			letterKey = true;
-			break;
 		case 'w':
 		case 'W':
 			g_W = 1;
@@ -359,11 +408,38 @@ void KeyboardGL( unsigned char c, int x, int y )
 			glutLeaveMainLoop();
 			break;
 		}
-	} else {
-		alphabet = loadLetters("../resources/alphabet.ldf", alphabet);
-		let = c;
-		lettersChanged = true;
-		letterKey = false;
+		break;
+	case 2:
+		switch ( c ) {
+		case 27:
+			if (let.size()) let.clear();
+			else glutLeaveMainLoop();
+			break;
+		case ' ': {
+			let.push_back("space");
+			for (int i = 0; i < let.size(); i ++) std::cout << let.at(i) << std::endl;
+			std::cout << std::endl;
+			break;
+		}
+		default: {
+			std::string l;
+			l.insert(0, 1, c);
+			let.push_back(l);
+			for (int i = 0; i < let.size(); i ++) std::cout << let.at(i) << std::endl;
+			std::cout << std::endl;
+		}
+		}
+		break;
+	case 4:
+		switch ( c ) {
+		case 27:
+			glutLeaveMainLoop();
+			break;
+		case ' ':
+			resetGame();
+			break;
+		}
+		break;
 	}
 }
 
@@ -500,6 +576,9 @@ void ReshapeGL( int w, int h )
     g_Camera.SetViewport( 0, 0, w, h );
     g_Camera.SetProjectionRH( 80.0f, w/(float)h, 1.0f, 1000.0f );
 
+    UI.SetViewport(0, 0, w, h);
+    UI.SetProjectionRH(-1, w - 1, 0, h, -1, 10);
+
     glutPostRedisplay();
 }
 
@@ -541,7 +620,7 @@ void InitGL( int argc, char* argv[] )
     //glClearDepth(1.0);
     glClear(GL_COLOR_BUFFER_BIT);
     glutSwapBuffers();
-    //glEnable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);
 
     std::cout << "Initialize OpenGL Success!" << std::endl;
 }
@@ -629,7 +708,7 @@ GLuint CreateShaderProgram( std::vector<GLuint> &shaders )
         glAttachShader( program, shader );
     }
 
-    // Link the program
+    // Link the programfMSizeZ
 	glLinkProgram(program);
 
 	// Check the link status.
@@ -658,6 +737,7 @@ GLuint CreateShaderProgram( std::vector<GLuint> &shaders )
 int main( int argc, char* argv[] )
 {
 	p = PerlinNoise(static_cast <unsigned int> (time(0)));
+	srand(static_cast <unsigned int> (time(0)));
 	// audioTest(); return 0;
 
 	g_PreviousTicks = std::clock();
@@ -741,7 +821,7 @@ int main( int argc, char* argv[] )
 
 	wMSizeZ = 5;
 
-	fWidth = 6;
+	fWidth = 12;
 	fLength = 200;
 
 	for (double i = (0 - (fWidth/2.0)) * fMSizeX; i < (fWidth/2.0) * fMSizeX; i += fMSizeX)
@@ -769,7 +849,8 @@ int main( int argc, char* argv[] )
 	objfloor.setPosition((glm::vec3){0,-3.5,0});
 	objfloor.setRotation((glm::quat){1,0,0,0});
 	objfloor.setScale((glm::vec3){fMScale,fMScale,fMScale});
-	objfloor.genVAO(0, vecShaderTile);
+	objfloor.genVAO(0, coverShaderTile);
+	objfloor.genVAO(1, vecShaderTile);
 	objfloor.getMatrix();
 
 	objwall = TileObject(&scene);
@@ -783,7 +864,7 @@ int main( int argc, char* argv[] )
 	objwall.genVAO(1, vecShaderTile);
 	objwall.getMatrix();
 
-	text = Object(0);
+	text = Object();
 	text.setVertices(defaultVertices);
 	text.setIndices(defaultIndices);
 	text.setPosition((glm::vec3){0,0,0});
@@ -792,9 +873,27 @@ int main( int argc, char* argv[] )
 	text.genVAO(0, vecShader);
 	text.getMatrix();
 
-	glLineWidth(8);
+	text2D = Object2D();
+	text2D.setVertices(defaultVertices);
+	text2D.setIndices(defaultIndices);
+	text2D.setPosition((glm::vec3){0,0,0});
+	text2D.setRotation((glm::quat){1,0,0,0});
+	text2D.setScale((glm::vec2){textSize,textSize});
+	text2D.genVAO(0, vecShader);
+	text2D.getMatrix();
 
-	let = "a";
+	explosionParticle = Object(&ship);
+	explosionParticle.setVertices(particleVertices);
+	explosionParticle.setIndices(particleIndices);
+	explosionParticle.setPosition((glm::vec3){0,0,0});
+	explosionParticle.setRotation((glm::quat){1,0,0,0});
+	explosionParticle.setScale((glm::vec3){1,1,1});
+	explosionParticle.genVAO(0, vecShader);
+	explosionParticle.getMatrix();
+
+	alphabet = loadLetters("../resources/alphabet.ldf", alphabet);
+
+	glLineWidth(8);
 
 	glutMainLoop();
 }
