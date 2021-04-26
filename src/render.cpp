@@ -42,7 +42,7 @@ std::vector<glm::quat> vector2::splash(int instances)
 	for (int i = 0; i < instances / 2; i ++) {v.push_back(rQuat()); v.push_back(rQuat() * glm::quat(0, 0, 1, 0));}
 	return v;
 }
-std::vector<glm::quat> vector2::drawSplash(int instances, float scale, Object o, int id, shader &s, Camera &c)
+std::vector<glm::quat> vector2::drawSplash(int instances, float scale, Object &o, int id, shader &s, Camera &c)
 {
 	std::vector<glm::quat> v = splash(instances);
 	std::vector<glm::quat> r = splash(instances);
@@ -65,12 +65,14 @@ std::vector<glm::quat> vector2::drawSplash(int instances, float scale, Object o,
 
 	return v;
 }
-void vector2::drawSplash(std::vector<glm::quat> v, int instances, float scale, float movement, Object o, int id, shader &s, Camera &c)
+void vector2::drawSplash(std::vector<glm::quat> v, int instances, float scale, float movement, Object &o, int id, shader &s, Camera &c)
 {
 	std::vector<glm::quat> r = splash(v.size());
 
 	glBindVertexArray( o.getVAO(id) );
 	glUseProgram( s.program );
+
+	glm::vec3 p = o.getPosition();
 
 	o.setPosition({0, 0, movement});
 	o.setScale({scale, scale, scale});
@@ -82,6 +84,8 @@ void vector2::drawSplash(std::vector<glm::quat> v, int instances, float scale, f
 		glUniformMatrix4fv( s.mvp, 1, GL_FALSE, glm::value_ptr(MVP) );
 		glDrawElements( GL_LINES_ADJACENCY, o.getSize(), GL_UNSIGNED_INT, BUFFER_OFFSET(0) );
 	}
+
+	o.setPosition(p);
 
 	glUseProgram(0);
 	glBindVertexArray(0);

@@ -14,8 +14,8 @@ namespace vector2 {
 	glm::quat rQuat();
 
 	std::vector<glm::quat> splash(int instances);
-	std::vector<glm::quat> drawSplash(int instances, float scale, Object o, int id, shader &s, Camera &c);
-	void drawSplash(std::vector<glm::quat>, int instances, float scale, float movement, Object o, int id, shader &s, Camera &c);
+	std::vector<glm::quat> drawSplash(int instances, float scale, Object &o, int id, shader &s, Camera &c);
+	void drawSplash(std::vector<glm::quat>, int instances, float scale, float movement, Object &o, int id, shader &s, Camera &c);
 
 	void drawModel(Object &o, int id, shader &s, Camera &c);
 	void drawModel(TileObject &o, int id, shader &s, Camera &c);
